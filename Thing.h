@@ -203,24 +203,72 @@ public:
   }
 };
 
-class ThingItem {
+class ThingData {
 public:
-  String id;
   String description;
   ThingDataType type;
   String atType;
+  String title = "";
+  double minimum = 0;
+  double maximum = -1;
+
+  ThingData(const char *description_, ThingDataType type_,
+            const char *atType_)
+    : description(description_), type(type_), atType(atType_) {}
+
+  void serialize(JsonObject obj) {
+    switch (type) {
+    case NO_STATE:
+      break;
+    case BOOLEAN:
+      obj["type"] = "boolean";
+      break;
+    case NUMBER:
+      obj["type"] = "number";
+      break;
+    case INTEGER:
+      obj["type"] = "integer";
+      break;
+    case STRING:
+      obj["type"] = "string";
+      break;
+    }
+
+    if (title != "") {
+      obj["title"] = title;
+    }
+
+    if (description != "") {
+      obj["description"] = description;
+    }
+
+    if (minimum < maximum) {
+      obj["minimum"] = minimum;
+    }
+
+    if (maximum > minimum) {
+      obj["maximum"] = maximum;
+    }
+
+    if (atType != nullptr) {
+      obj["@type"] = atType;
+    }
+  }
+};
+
+
+class ThingItem: public ThingData {
+public:
+  String id;
   ThingItem *next = nullptr;
 
   bool readOnly = false;
   String unit = "";
-  String title = "";
-  double minimum = 0;
-  double maximum = -1;
   double multipleOf = -1;
 
   ThingItem(const char *id_, const char *description_, ThingDataType type_,
             const char *atType_)
-      : id(id_), description(description_), type(type_), atType(atType_) {}
+      : ThingData(description_, type_, atType_), id(id_) {}
 
   void setValue(ThingDataValue newValue) {
     this->value = newValue;
@@ -245,22 +293,7 @@ public:
   ThingDataValue getValue() { return this->value; }
 
   void serialize(JsonObject obj, String deviceId, String resourceType) {
-    switch (type) {
-    case NO_STATE:
-      break;
-    case BOOLEAN:
-      obj["type"] = "boolean";
-      break;
-    case NUMBER:
-      obj["type"] = "number";
-      break;
-    case INTEGER:
-      obj["type"] = "integer";
-      break;
-    case STRING:
-      obj["type"] = "string";
-      break;
-    }
+    ThingData::serialize(obj);
 
     if (readOnly) {
       obj["readOnly"] = true;
@@ -270,28 +303,8 @@ public:
       obj["unit"] = unit;
     }
 
-    if (title != "") {
-      obj["title"] = title;
-    }
-
-    if (description != "") {
-      obj["description"] = description;
-    }
-
-    if (minimum < maximum) {
-      obj["minimum"] = minimum;
-    }
-
-    if (maximum > minimum) {
-      obj["maximum"] = maximum;
-    }
-
     if (multipleOf > 0) {
       obj["multipleOf"] = multipleOf;
-    }
-
-    if (atType != nullptr) {
-      obj["@type"] = atType;
     }
 
     // 2.9 Property object: A links array (An array of Link objects linking
