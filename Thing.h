@@ -256,6 +256,22 @@ public:
   }
 };
 
+class SifisHazard: public ThingData {
+public:
+  int risk = 0;
+
+  SifisHazard(const char *description_, ThingDataType type_,
+            const char *atType_)
+    : ThingData(description_, type_, atType_) {}
+
+  void serialize(JsonObject obj) {
+    ThingData::serialize(obj);
+
+    if (risk > 0) {
+      obj["sifis:risk"] = risk;
+    }
+  }
+};
 
 class ThingItem: public ThingData {
 public:
@@ -265,6 +281,8 @@ public:
   bool readOnly = false;
   String unit = "";
   double multipleOf = -1;
+
+  ThingData *hazard = nullptr;
 
   ThingItem(const char *id_, const char *description_, ThingDataType type_,
             const char *atType_)
@@ -314,6 +332,11 @@ public:
     JsonObject inline_links_prop = inline_links.createNestedObject();
     inline_links_prop["href"] =
         "/things/" + deviceId + "/" + resourceType + "/" + id;
+
+    if (hazard) {
+      JsonObject hz = obj.createNestedObject("sifis:hazard");
+      hazard->serialize(hz);
+    }
   }
 
   void serializeValue(JsonObject prop) {
